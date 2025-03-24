@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="Relative trajectory balance, an objective for unbiased posterior sampling with diffusion priors. ">
+  <meta name="keywords" content="diffusion models, gflownets, fine-tuning">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Off Policy Diffusion Samplers</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/images/favicon.svg">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+  </script>
+  <script type="text/javascript"
+    src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS_CHTML">
+  </script>
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="main navigation" style="background-color: #333; color: #fff;">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" style="color: #fff;">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  <div class="navbar-menu">
+    <div class="navbar-start" style="flex-grow: 1; justify-content: center;">
+      <a class="navbar-item" href="#abstract" style="color: #fff; border-bottom: 0px solid #fff;">
+        Abstract
+      </a>
+      <a class="navbar-item" href="#setup" style="color: #fff; border-bottom: 0px solid #fff;">
+        Setup
+      </a>
+      <a class="navbar-item" href="#method" style="color: #fff; border-bottom: 0px solid #fff;">
+        TBA
+      </a>
+      <a class="navbar-item" href="#results" style="color: #fff; border-bottom: 0px solid #fff;">
+        Experiments
+      </a>
+      <a class="navbar-item" href="#BibTeX" style="color: #fff; border-bottom: 0px solid #fff;">
+        BibTeX
+      </a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">Trajectory Balance with Asynchrony: Decoupling Exploration and Learning for Fast, Scalable LLM Post-Training</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="https://brianbartoldson.wordpress.com/">Brian R. Bartoldson</a><sup>1</sup></span>
+            <span class="author-block">
+              <a href="https://hyperpotatoneo.github.io">Siddarth Venkatraman</a><sup>2,3</sup></span>
+              <span class="author-block">
+              <a href="https://people.llnl.gov/diffenderfer2">James Diffenderfer</a><sup>1</sup>
+            </span>
+            <span class="author-block">
+              <a href="https://mj10.github.io">Moksh Jain</a><sup>2,3</sup>
+            </span>
+            <span class="author-block">
+              <a href="https://tbennun.github.io/">Tal Ben-Nun</a><sup>1</sup>
+            </span>
+            <br/>
+            <span class="author-block">
+              <a href="https://seanie12.github.io/">Seanie Lee</a><sup>4</sup>
+            </span>
+            <span class="author-block">
+              <a href="https://minsuukim.github.io">Minsu Kim</a><sup>2,4</sup>
+            </span>
+            <span class="author-block">
+              <a href="https://johanobandoc.github.io/index.html">Johan Obando-Ceron</a><sup>2,3</sup>
+            </span>
+            <span class="author-block">
+              <a href="https://yoshuabengio.org">Yoshua Bengio</a><sup>2,3,5</sup>
+            </span>
+            <span class="author-block">
+              <a href="https://people.llnl.gov/kailkhura1">Bhavya Kailkhura</a><sup>1</sup>
+            </span>
+
+          </div>
+          <!-- <div class="is-size-5 publication-authors">
+            <span class="author-block">Mila -  Quebec AI Institute</span>
+          </div> -->
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>1</sup>Lawrence Livermore National Laboratory</span>
+            <span class="author-block"><sup>2</sup>Mila - Quebec AI Institute</span>
+            <br/>
+            <span class="author-block"><sup>3</sup>Université de Montréal</span>
+            <span class="author-block"><sup>4</sup>KAIST</span>
+            <span class="author-block"><sup>5</sup>CIFAR Fellow</span>
+          </div>
+
+          <!-- <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <b>NeurIPS 2024</b>
+            </span> -->
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <span class="link-block">
+                <a href="https://arxiv.org/pdf/2405.20971.pdf"
+                   class="external-link button is-normal is-rounded">
+                  <span class="icon">
+                      <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Paper</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2405.20971"
+                   class="external-link button is-normal is-rounded">
+                  <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/GFNOrg/diffusion-finetuning"
+                   class="external-link button is-normal is-rounded">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code (Coming Soon)</span>
+                  </a>
+              </span>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <!-- <img src="./static/images/final_picture_teaser.jpg" -->
+        <!-- alt="Teaser image." -->
+        <!-- class="teaser-image"/> -->
+        <center>
+          <figure>
+            <img src="./static/images/gsm8k.png" alt="GSM-8k Results" style="width: 100%;"/>
+            <figcaption class="has-text-centered is-size-6 mt-2">
+              TBA shows improved performance on GSM-8k mathematical reasoning tasks compared to baseline methods.
+            </figcaption>
+          </figure>
+        </center>
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3" id="abstract">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Reinforcement learning (RL) is a critical component of large language model (LLM) post-training. However, existing on-policy algorithms used for post-training are inherently incompatible with the use of experience replay buffers, which can be populated scalably by distributed off-policy actors to enhance exploration as compute increases. We propose efficiently obtaining this benefit of replay buffers via Trajectory Balance with Asynchrony (TBA), a massively scalable LLM RL system. In contrast to existing approaches, TBA uses a larger fraction of compute on search, constantly generating off-policy data for a central replay buffer. A training node simultaneously samples data from this buffer based on reward or recency to update the policy using Trajectory Balance (TB), a diversity-seeking RL objective introduced for GFlowNets. TBA offers three key advantages: (1) decoupled training and search, speeding up training wall-clock time by 4x or more; (2) improved diversity through large-scale off-policy sampling; and (3) scalable search for sparse reward settings. On mathematical reasoning, preference-tuning, and automated red-teaming (diverse and representative post-training tasks), TBA produces speed and performance improvements over strong baselines.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+  <hr>
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Animation. -->
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+
+        <h2 class="title is-3" id="intractable">Fine-tuning large language models</h2>
+
+        <h3 class="title is-4" id="setup">Setup</h3>
+
+        <div class="content has-text-justified">
+          <center>
+            <img src="./static/images/setup.png" alt="Image" style="width: 100%;"/>
+          </center>
+        </div>
+
+        <div class="content has-text-justified">
+          <p> 
+            Traditional reinforcement learning from human feedback (RLHF) approaches for large language models (LLMs) use on-policy algorithms that tightly couple exploration and learning. These approaches typically involve generating samples from the current policy, evaluating them (with reward models or human feedback), and updating the policy based on those samples. This coupling limits scalability and exploration efficiency, especially when dealing with sparse rewards or when aiming to improve diverse behaviors.
+          </p>
+        </div>
+
+        <hr>
+
+        <h2 class="title is-3" id="method">Trajectory Balance with Asynchrony</h2>
+
+
+        <p>
+          Trajectory Balance with Asynchrony (TBA) is a novel approach that decouples exploration from learning in LLM post-training. TBA uses asynchronous distributed actors to populate a central replay buffer with diverse experiences, while a separate training node samples from this buffer to update the policy. This approach leverages Trajectory Balance (TB), a diversity-seeking reinforcement learning objective originally developed for GFlowNets. The objective, shown in the formula below, aims to balance rewards and diversity across generated trajectories.
+        </p>
+        <div class="box" style="background-color:aliceblue">
+          <div class="content has-text-justified">
+              $$
+              \begin{align*}
+              \mathcal{L}_{\text{TB}}^{\text{VarGrad}}(\mathbf{B};\theta) = \frac{1}{BK}\sum_{i=1,j=1}^{i=B,j=K} \Bigg( 
+                \log \hat{Z}(\mathbf{x}^{(i)}) + \sum_{t=1}^{T}\log \pi_{\theta}(y_t^{(i,j)} \mid y_{1:t}^{(i,j)},\mathbf{x}^{(i)}) 
+                \\- \log \pi_{\text{ref}}(y_t^{(i,j)} \mid y_{1:t}^{(i,j)},\mathbf{x}^{(i)}) 
+                - \frac{1}{\beta} r(\mathbf{y}^{(i,j)};\mathbf{x}^{(i)}) \Bigg)^2.
+                \end{align*}$$
+              <!-- <b></b>  -->
+          </div>
+        </div>
+        <div class="content has-text-justified">
+        <p>
+          By decoupling exploration from learning, TBA offers three key advantages: (1) improved wall-clock training time through parallelized exploration, (2) enhanced sample diversity through large-scale off-policy sampling, and (3) more effective exploration in sparse reward settings. The system allows larger fractions of compute to be dedicated to search, constantly generating off-policy data that captures diverse behaviors.
+        </p>
+        </div>
+
+        <div class="content has-text-justified">
+        <h3 class="title is-4" id="setup">Off-Policy Exploration</h3>
+        <p>
+          TBA employs off-policy exploration where multiple actors asynchronously generate experiences that are added to a central replay buffer. This buffer can be sampled based on different strategies, such as recency or reward-weighted sampling. Unlike traditional on-policy methods that only use samples from the current policy, TBA can leverage samples generated from earlier policy versions, increasing diversity and exploration efficiency. This approach is particularly valuable for tasks with sparse rewards where extensive exploration is necessary.
+        </p>
+        </div>
+
+        <hr>
+
+        <h2 class="title is-3" id="results">Experiments</h2>
+
+        <h3 class="title is-4" id="results">Preference fine-tuning</h3>
+        <p>
+          In preference fine-tuning experiments, TBA demonstrates improved performance compared to baseline methods. The approach can effectively learn from human preferences by generating diverse responses and updating the policy to align with preferred behaviors. The asynchronous nature of TBA allows for more efficient exploration of the response space, leading to higher quality outputs that better align with human preferences.
+        </p>
+        <div class="content has-text-justified">
+          <center>
+            <img src="./static/images/pft-1.png" alt="Image" style="width: 100%;"/>
+          </center>
+        </div>
+        <div class="content has-text-justified">
+          <center>
+            <img src="./static/images/pft-2.png" alt="Image" style="width: 100%;"/>
+          </center>
+        </div>
+
+        <h3 class="title is-4" id="results">Mathematical Reasoning</h3>
+        <p>
+          On mathematical reasoning tasks like GSM-8k, TBA shows significant improvements over baseline methods. The approach's ability to explore diverse solution strategies while learning from successful examples helps the model develop better reasoning capabilities. The decoupled exploration and learning process allows TBA to discover effective solution patterns more efficiently than traditional on-policy methods.
+        </p>
+
+        <h3 class="title is-4" id="results">Red-teaming</h3>
+        <p>
+          In red-teaming experiments, TBA proves effective at finding diverse model vulnerabilities and subsequently improving model robustness. The asynchronous exploration process allows for thorough testing of potential attack vectors, while the training process efficiently learns to address these vulnerabilities. This approach demonstrates that TBA can be applied to improve model safety alongside performance on more standard benchmarks.
+        </p>
+        <div class="content has-text-justified">
+          <center>
+            <img src="./static/images/redteam.png" alt="LM results" style="width: 100%;"/>
+          </center>
+        </div>
+        <div class="content has-text-justified">
+          <center>
+            <img src="./static/images/compute.png" alt="LM results" style="width: 100%;"/>
+          </center>
+        </div>
+        <p>
+          TBA significantly improves computational efficiency compared to traditional methods. By decoupling exploration and learning, TBA achieves up to 4x faster wall-clock training time. The system scales effectively with increased compute resources, with performance improving as more actors contribute to the replay buffer. This scalability makes TBA particularly suitable for large-scale LLM post-training scenarios where computational efficiency is crucial.
+        </p>
+      </div>
+    </div>
+
+    <!--/ Animation. -->
+  </div>
+</section>
+
+<hr>
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>
+      @article{
+        bartoldson2025tba,
+        title={Trajectory Balance with Asynchrony: Decoupling Exploration and Learning for Fast, Scalable {LLM} Post-Training},
+        author={Brian R. Bartoldson and Siddarth Venkatraman and James Diffenderfer and Moksh Jain and Tal Ben-Nun and Seanie Lee and Minsu Kim and Johan Obando-Ceron and Yoshua Bengio and Bhavya Kailkhura},
+        year={2025},
+        url={https://openreview.net/forum?id=iSyxl2dKyz}
+      }
+</code></pre>
+<!-- journal   = {ICML}, -->
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <a class="icon-link"
+         href="https://arxiv.org/pdf/2405.20971.pdf">
+        <i class="fas fa-file-pdf"></i>
+      </a>
+      <a class="icon-link" href="https://github.com/GFNOrg/diffusion-finetuning" class="external-link" disabled>
+        <i class="fab fa-github"></i>
+      </a>
+    </div>
+    <div class="columns is-centered">
+      <p>
+        <!-- Corresponding Authors: <a href="mailto:anikait@stanford.edu">Anikait Singh</a>, <a href="mailto:ftajwar@cs.cmu.edu">Fahim Tajwar</a>.<br> -->
+        We thank the Nerfies Team for their <a href="https://github.com/nerfies/nerfies.github.io">website template</a>.
+      </p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

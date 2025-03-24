@@ -1,0 +1,123 @@
+/* Import font from Google Fonts */
+@import url('https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro');
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Noto Sans', serif;
+    background-color: #f9f9f9;
+    color: #333;
+}
+
+.authors {
+    color: gray;
+}
+
+header {
+    background-color: #662E7D;
+    color: #fff;
+    padding: 40px;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2em;
+}
+
+main {
+    padding: 20px;
+}
+
+.projects {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.project-card {
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.project-card img {
+    width: 100%;
+    height: auto;
+}
+
+.project-content {
+    padding: 20px;
+}
+
+.project-content h2 {
+    margin-top: 0;
+    color: #00416d;
+}
+
+.project-content p {
+    font-size: 1em;
+    line-height: 1.6;
+}
+
+.project-content a {
+    text-decoration: none;
+    color: #00416d;
+    font-weight: bold;
+}
+
+.project-content a:hover {
+    text-decoration: underline;
+}
+
+/* Media query for tablets and larger screens */
+@media (min-width: 600px) {
+    header {
+        padding: 50px; /* Increased padding */
+    }
+
+    header h1 {
+        font-size: 3em; /* Increased font size */
+    }
+
+    .project-card {
+        flex-direction: row;
+        width: 60%;
+        margin: 0 auto;
+    }
+
+    .project-card img {
+        width: 20%;
+    }
+
+    .project-content {
+        width: 80%;
+    }
+}
+
+/* Media query for desktops and larger screens */
+@media (min-width: 992px) {
+    header {
+        padding: 60px; /* Further increased padding */
+    }
+
+    header h1 {
+        font-size: 3.5em; /* Further increased font size */
+    }
+
+    main {
+        padding: 40px;
+    }
+
+    .project-content p {
+        font-size: 1.1em;
+    }
+}
