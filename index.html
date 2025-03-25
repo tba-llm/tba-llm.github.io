@@ -121,7 +121,7 @@
             <div class="publication-links">
               <!-- PDF Link. -->
               <span class="link-block">
-                <a href="https://arxiv.org/pdf/2405.20971.pdf"
+                <a href="https://arxiv.org/pdf/2503.18929.pdf"
                    class="external-link button is-normal is-rounded">
                   <span class="icon">
                       <i class="fas fa-file-pdf"></i>
@@ -130,7 +130,7 @@
                 </a>
               </span>
               <span class="link-block">
-                <a href="https://arxiv.org/abs/2405.20971"
+                <a href="https://arxiv.org/abs/2503.18929"
                    class="external-link button is-normal is-rounded">
                   <span class="icon">
                       <i class="ai ai-arxiv"></i>
@@ -168,7 +168,7 @@
           <figure>
             <img src="./static/images/gsm8k.png" alt="GSM-8k Results" style="width: 100%;"/>
             <figcaption class="has-text-centered is-size-6 mt-2">
-              TBA shows improved performance on GSM-8k mathematical reasoning tasks compared to baseline methods.
+              TBA performs rapid, scalable exploration of model responses, improving RL efficiency on the GSM8K mathematical reasoning task.
             </figcaption>
           </figure>
         </center>
@@ -202,48 +202,60 @@
 
         <h3 class="title is-4" id="setup">Setup</h3>
 
-        <div class="content has-text-justified">
-          <center>
-            <img src="./static/images/setup.png" alt="Image" style="width: 100%;"/>
-          </center>
-        </div>
+        
 
         <div class="content has-text-justified">
           <p> 
-            Traditional reinforcement learning from human feedback (RLHF) approaches for large language models (LLMs) use on-policy algorithms that tightly couple exploration and learning. These approaches typically involve generating samples from the current policy, evaluating them (with reward models or human feedback), and updating the policy based on those samples. This coupling limits scalability and exploration efficiency, especially when dealing with sparse rewards or when aiming to improve diverse behaviors.
+            We study the problem of fine-tuning of a pretrained language model with a reward model. To prevent issues such as spurious reward overoptimization — which can lead to poor performance and low diversity — the fine-tuning objective includes a KL divergence constraint that keeps the updated model close to the original. This objective can be interpreted probabilistically as Bayesian posterior inference, with the optimal policy expressible as a reweighted version of the reference model. Within the probabilistic interpretation, on-policy RL is equivalent to amortized variational inference to minimize the reverse KL with respect to the posterior density. However, reverse KL optimization is susceptible to mode collapse and requires on-policy samples. The reliance on on-policy samples can limit the scalabality as we cannot use replay buffers that can be populated in parallel at scale. 
           </p>
+          <p> 
+            An alternative off-policy approach to enhance scalability and exploration is using Generative Flow Networks (GFlowNets). GFlowNets cast the inference problem as sequential decision-making, where a policy constructs outputs token by token, sampling proportional to a designed reward function. Since GFlowNet objectives such as VarGrad (defined below) are off-policy, they support flexible exploration and efficient training using replay buffers, making it well-suited for large-scale, distributed fine-tuning of language models.
+          </p>
+          <div class="box" style="background-color:aliceblue">
+            <div class="content has-text-justified">
+                $$
+                \begin{align*}
+                \mathcal{L}_{\text{TB}}^{\text{VarGrad}}(\mathbf{B};\theta) = \frac{1}{BK}\sum_{i=1,j=1}^{i=B,j=K} \Bigg( 
+                  \log \hat{Z}(\mathbf{x}^{(i)}) + \sum_{t=1}^{T}\log \pi_{\theta}(y_t^{(i,j)} \mid y_{1:t}^{(i,j)},\mathbf{x}^{(i)}) 
+                  \\- \log \pi_{\text{ref}}(y_t^{(i,j)} \mid y_{1:t}^{(i,j)},\mathbf{x}^{(i)}) 
+                  - \frac{1}{\beta} r(\mathbf{y}^{(i,j)};\mathbf{x}^{(i)}) \Bigg)^2.
+                  \end{align*}$$
+                <!-- <b></b>  -->
+            </div>
+          </div>
         </div>
 
         <hr>
 
         <h2 class="title is-3" id="method">Trajectory Balance with Asynchrony</h2>
 
+        <div class="content has-text-justified">
+          <center>
+            <img src="./static/images/setup.png" alt="Image" style="width: 100%;"/>
+          </center>
+        </div>
 
         <p>
-          Trajectory Balance with Asynchrony (TBA) is a novel approach that decouples exploration from learning in LLM post-training. TBA uses asynchronous distributed actors to populate a central replay buffer with diverse experiences, while a separate training node samples from this buffer to update the policy. This approach leverages Trajectory Balance (TB), a diversity-seeking reinforcement learning objective originally developed for GFlowNets. The objective, shown in the formula below, aims to balance rewards and diversity across generated trajectories.
+          In this work we introduce <b>Trajectory Balance with Asynchrony (TBA)</b>, an asynchronous, distributed reinforcement learning (RL) system designed to accelerate and scale post-training of large language models (LLMs). The key idea is decoupling data generation (exploration) from policy updates (training), which enables more efficient resource utilization and dramatically reduces wall-clock training time.
         </p>
-        <div class="box" style="background-color:aliceblue">
-          <div class="content has-text-justified">
-              $$
-              \begin{align*}
-              \mathcal{L}_{\text{TB}}^{\text{VarGrad}}(\mathbf{B};\theta) = \frac{1}{BK}\sum_{i=1,j=1}^{i=B,j=K} \Bigg( 
-                \log \hat{Z}(\mathbf{x}^{(i)}) + \sum_{t=1}^{T}\log \pi_{\theta}(y_t^{(i,j)} \mid y_{1:t}^{(i,j)},\mathbf{x}^{(i)}) 
-                \\- \log \pi_{\text{ref}}(y_t^{(i,j)} \mid y_{1:t}^{(i,j)},\mathbf{x}^{(i)}) 
-                - \frac{1}{\beta} r(\mathbf{y}^{(i,j)};\mathbf{x}^{(i)}) \Bigg)^2.
-                \end{align*}$$
-              <!-- <b></b>  -->
-          </div>
-        </div>
+        <p>TBA divides the system into two main types of nodes:</p>
         <div class="content has-text-justified">
-        <p>
-          By decoupling exploration from learning, TBA offers three key advantages: (1) improved wall-clock training time through parallelized exploration, (2) enhanced sample diversity through large-scale off-policy sampling, and (3) more effective exploration in sparse reward settings. The system allows larger fractions of compute to be dedicated to search, constantly generating off-policy data that captures diverse behaviors.
-        </p>
+        <ul>
+          <li><b>Searcher Nodes</b> maintain a local copy of the policy and generate responses for queries in the dataset in a local buffer which is periodically synced to a global buffer.</li>
+          <li><b>Trainer Nodes</b> asynchronously sample a batch from the global buffer, alternating between on-policy and off-policy data to update the policy.</li>
+        </ul>
         </div>
 
         <div class="content has-text-justified">
-        <h3 class="title is-4" id="setup">Off-Policy Exploration</h3>
+        <!-- <h3 class="title is-4" id="setup">Off-Policy Exploration</h3> -->
         <p>
-          TBA employs off-policy exploration where multiple actors asynchronously generate experiences that are added to a central replay buffer. This buffer can be sampled based on different strategies, such as recency or reward-weighted sampling. Unlike traditional on-policy methods that only use samples from the current policy, TBA can leverage samples generated from earlier policy versions, increasing diversity and exploration efficiency. This approach is particularly valuable for tasks with sparse rewards where extensive exploration is necessary.
+          Key Benefits and Design Considerations
+          <ul>
+            <li> Asynchronous and Distributed Design: By decoupling exploration from training, TBA allows the searcher nodes to continuously generate trajectories without waiting for the training process, leading to massive parallelism and high resource utilization.
+            <li> Off-Policy Learning with Trajectory Balance Objective: Integrating the TB objective facilitates learning from diverse, off-policy data. This approach mitigates the common pitfalls of on-policy RL (such as mode collapse) while ensuring that updates derive from a broader and more varied set of experiences.
+            <li>Scalability: The architecture is inherently scalable. As more searcher nodes are added, the volume and diversity of the trajectories in the global buffer increase, which in turn enhances exploration—especially beneficial in settings with sparse rewards.
+
+          </ul>
         </p>
         </div>
 
@@ -251,43 +263,56 @@
 
         <h2 class="title is-3" id="results">Experiments</h2>
 
+        <h3 class="title is-4" id="results">Mathematical Reasoning</h3>
+        <p>
+          On mathematical reasoning tasks like GSM-8k, TBA shows significant improvements over baseline methods. The approach's ability to explore diverse solution strategies while learning from successful examples helps the model develop better reasoning capabilities. The decoupled exploration and learning process allows TBA to discover effective solution patterns more efficiently than traditional on-policy methods.
+        </p>
+        <hr>
+        <!-- <div></div> -->
+
         <h3 class="title is-4" id="results">Preference fine-tuning</h3>
         <p>
-          In preference fine-tuning experiments, TBA demonstrates improved performance compared to baseline methods. The approach can effectively learn from human preferences by generating diverse responses and updating the policy to align with preferred behaviors. The asynchronous nature of TBA allows for more efficient exploration of the response space, leading to higher quality outputs that better align with human preferences.
+          In preference fine-tuning experiments, TTBA not only redefines the win-rate versus KL Pareto frontier—achieving higher win rates (e.g., around 82% for well-tuned hyperparameters) at lower or comparable KL values—but also achieves significant training speedups (approximately 5× faster than synchronous methods). Further ablations reveal that maintaining a moderately high on-policy proportion (controlled by the parameter m) is critical for maximizing win-rate performance without sacrificing model stability. Overall, the experiments demonstrate that TBA effectively scales preference fine-tuning by combining rapid, diverse exploration with stable, efficient policy updates.
         </p>
         <div class="content has-text-justified">
           <center>
             <img src="./static/images/pft-1.png" alt="Image" style="width: 100%;"/>
+            <figcaption class="has-text-centered is-size-6 mt-2">
+              TBA scales search and improves RL efficiency on the TL;DR summarization task.
+            </figcaption>
           </center>
         </div>
         <div class="content has-text-justified">
           <center>
             <img src="./static/images/pft-2.png" alt="Image" style="width: 100%;"/>
+            <figcaption class="has-text-centered is-size-6 mt-2">
+             TBA defines a new KL vs. win-rate Pareto frontier for the TL;DR summarization task.
+            </figcaption>
           </center>
         </div>
 
-        <h3 class="title is-4" id="results">Mathematical Reasoning</h3>
-        <p>
-          On mathematical reasoning tasks like GSM-8k, TBA shows significant improvements over baseline methods. The approach's ability to explore diverse solution strategies while learning from successful examples helps the model develop better reasoning capabilities. The decoupled exploration and learning process allows TBA to discover effective solution patterns more efficiently than traditional on-policy methods.
-        </p>
-
+        
         <h3 class="title is-4" id="results">Red-teaming</h3>
         <p>
-          In red-teaming experiments, TBA proves effective at finding diverse model vulnerabilities and subsequently improving model robustness. The asynchronous exploration process allows for thorough testing of potential attack vectors, while the training process efficiently learns to address these vulnerabilities. This approach demonstrates that TBA can be applied to improve model safety alongside performance on more standard benchmarks.
+          In red-teaming experiments, TBA achieves up to a 7x speedup in wall-clock time relative to a synchronous setup. It maintains competitive—or even superior—performance on the diversity-toxicity Pareto frontier, meaning it effectively balances broad exploration of adversarial prompts with the generation of high-toxicity (i.e., high-reward) cases.
         </p>
         <div class="content has-text-justified">
           <center>
             <img src="./static/images/redteam.png" alt="LM results" style="width: 100%;"/>
+            <figcaption class="has-text-centered is-size-6 mt-2">
+              TBA reaches the RT diversity-toxicity Pareto frontier and improves as search is scaled.
+              </figcaption> 
           </center>
         </div>
         <div class="content has-text-justified">
           <center>
             <img src="./static/images/compute.png" alt="LM results" style="width: 100%;"/>
+            <figcaption class="has-text-centered is-size-6 mt-2">
+              TBA speeds up the wall-clock time required to reach the Pareto frontier for the red-teaming task
+            </figcaption>
           </center>
         </div>
-        <p>
-          TBA significantly improves computational efficiency compared to traditional methods. By decoupling exploration and learning, TBA achieves up to 4x faster wall-clock training time. The system scales effectively with increased compute resources, with performance improving as more actors contribute to the replay buffer. This scalability makes TBA particularly suitable for large-scale LLM post-training scenarios where computational efficiency is crucial.
-        </p>
+        
       </div>
     </div>
 
@@ -306,7 +331,8 @@
         title={Trajectory Balance with Asynchrony: Decoupling Exploration and Learning for Fast, Scalable {LLM} Post-Training},
         author={Brian R. Bartoldson and Siddarth Venkatraman and James Diffenderfer and Moksh Jain and Tal Ben-Nun and Seanie Lee and Minsu Kim and Johan Obando-Ceron and Yoshua Bengio and Bhavya Kailkhura},
         year={2025},
-        url={https://openreview.net/forum?id=iSyxl2dKyz}
+        journal={arXiv preprint arXiv:2503.18929},
+        url={https://arxiv.org/abs/2503.18929}
       }
 </code></pre>
 <!-- journal   = {ICML}, -->
@@ -318,12 +344,12 @@
   <div class="container">
     <div class="content has-text-centered">
       <a class="icon-link"
-         href="https://arxiv.org/pdf/2405.20971.pdf">
+         href="https://arxiv.org/pdf/2503.18929.pdf">
         <i class="fas fa-file-pdf"></i>
       </a>
-      <a class="icon-link" href="https://github.com/GFNOrg/diffusion-finetuning" class="external-link" disabled>
+      <!-- <a class="icon-link" href="https://github.com/GFNOrg/diffusion-finetuning" class="external-link" disabled>
         <i class="fab fa-github"></i>
-      </a>
+      </a> -->
     </div>
     <div class="columns is-centered">
       <p>
